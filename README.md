@@ -30,7 +30,6 @@ To run Mono, you need Python 3.7 or later. Additionally, you'll need to install 
     ```
 
 ## Running the Application
-### Running with Streamlit GUI
 1. Start the Streamlit app:
 
     ```bash
@@ -38,15 +37,6 @@ To run Mono, you need Python 3.7 or later. Additionally, you'll need to install 
     ```
 
 2. This will launch the Streamlit interface in your default web browser. You can interact with the application using the provided graphical interface.
-
-### Running from the Shell (CLI)
-1. Run the Mono script directly from the command line:
-
-    ```bash
-    python shell.py
-    ```
-    
-2. This will execute the application in the terminal. You will interact with the tool through the command line interface (CLI).
 
 ## File Structure
 - .streamlit: Configuration files for the Streamlit app.
