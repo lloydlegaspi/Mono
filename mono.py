@@ -120,7 +120,7 @@ with col2:
             content = st.session_state["file_content"].strip()
             if content:
                 lexer_output, token_data = run_lex("unnamed", content)
-                st.write(lexer_output, token_data)
+                # st.write(lexer_output, token_data)
                 st.session_state["lexer_output"] = lexer_output
                 st.session_state["symbol_table"] = token_data
 

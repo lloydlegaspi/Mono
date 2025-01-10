@@ -40,7 +40,6 @@ class Lexer:
 
         while self.current_char != None:
             char = self.current_char
-            temptchar = self.nextState()
             
             # Skips through whitespaces
             if isWhitespace(char):
@@ -79,7 +78,7 @@ class Lexer:
                     errors.append(result)
                 
             # Scans for string literals and multi-line docstrings
-            elif char == '"' or char == "_":
+            elif char == '"':
                 result = self.make_string_or_docstring()
                 if isinstance(result, Token):
                     tokens.append(result)
@@ -257,7 +256,7 @@ class Lexer:
         elif isErr:
             return InvalidRelationalSymbol(pos_start, self.pos.copy(), details)
         
-        # Create Token for Single-Line Comments
+    # Create Token for Single-Line Comments
     def make_comments(self):
         pos_start = self.pos.copy()
         comment_str = '#'
