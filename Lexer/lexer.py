@@ -443,7 +443,7 @@ class Lexer:
                         self.advance()
 
 
-            # bool
+            # bool, break
             elif self.current_char == 'b' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
@@ -458,57 +458,61 @@ class Lexer:
                         if self.current_char == 'l':
                             lexeme += self.current_char
                             tokentype = TT_DATA_TYPE
-                            self.advance()     
+                            self.advance()
+                
+                # break = KEYWORD
+                elif self.current_char == 'r':
+                    lexeme += self.current_char
+                    self.advance()
+                    if self.current_char == 'e':
+                        lexeme += self.current_char
+                        self.advance()
+                        if self.current_char == 'a':
+                            lexeme += self.current_char
+                            self.advance()
+                            if self.current_char == 'k':
+                                lexeme += self.current_char
+                                tokentype = TT_KEYWORD
+                                self.advance()
 
-            # const = RESERVED_WORD
+            # catch
             elif self.current_char == 'c' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
-                if self.current_char == 'o':
+                
+                # catch = KEYWORD
+                if self.current_char == 'a':
                     lexeme += self.current_char
                     self.advance()
-                    if self.current_char == 'n':
+                    if self.current_char == 't':
                         lexeme += self.current_char
                         self.advance()
-                        if self.current_char == 's':
+                        if self.current_char == 'c':
                             lexeme += self.current_char
                             self.advance()
-                            if self.current_char == 't':
+                            if self.current_char == 'h':
                                 lexeme += self.current_char
-                                tokentype = TT_RESERVED_WORD
+                                tokentype = TT_KEYWORD
                                 self.advance()
+                            
                         
 
-            # def, default, do
+            # dict, do
             elif self.current_char == 'd' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
-                # def = RESERVED_WORD
-                if self.current_char == 'e':
+                # dict = KEYWORD
+                if self.current_char == 'i':
                     lexeme += self.current_char
                     self.advance()
-                    if self.current_char == 'f':
+                    if self.current_char == 'c':
                         lexeme += self.current_char
-                        tokentype = TT_KEYWORD
                         self.advance()
-                        
-                        # default = RESERVED_WORD
-                        if self.current_char == 'a':
+                        if self.current_char == 't':
                             lexeme += self.current_char
-                            tokentype = TT_IDENTIFIER
+                            tokentype = TT_KEYWORD
                             self.advance()
-                            if self.current_char == 'u':
-                                lexeme += self.current_char
-                                self.advance()
-                                if self.current_char == 'l':
-                                    lexeme += self.current_char
-                                    self.advance()
-                                    if self.current_char == 't':
-                                        lexeme += self.current_char
-                                        tokentype = TT_RESERVED_WORD
-                                        self.advance()
-       
-                                    
+                                           
                 # do = NOISE_WORD
                 elif self.current_char == 'o':
                     lexeme += self.current_char
@@ -516,7 +520,7 @@ class Lexer:
                     self.advance()
                                     
                                     
-            # elif, else, end, entity, except, exit, exp
+            # elif, else, end, ensure
             elif self.current_char == 'e' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
@@ -551,59 +555,23 @@ class Lexer:
                         tokentype = TT_NOISE_WORD
                         self.advance()
                         
-                    # entity = RESERVED_WORD
-                    elif self.current_char == 't':
+                    # ensure = KEYWORD
+                    elif self.current_char == 's':
                         lexeme += self.current_char
                         self.advance()
-                        if self.current_char == 'i':
+                        if self.current_char == 'u':
                             lexeme += self.current_char
                             self.advance()
-                            if self.current_char == 't':
+                            if self.current_char == 'r':
                                 lexeme += self.current_char
                                 self.advance()
-                                if self.current_char == 'y':
-                                    lexeme += self.current_char
-                                    tokentype = TT_RESERVED_WORD
-                                    self.advance()
-                                    
-                # except = KEYWORD
-                elif self.current_char == 'x':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'c':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'e':
-                            lexeme += self.current_char
-                            self.advance()
-                            if self.current_char == 'p':
-                                lexeme += self.current_char
-                                self.advance()
-                                if self.current_char == 't':
+                                if self.current_char == 'e':
                                     lexeme += self.current_char
                                     tokentype = TT_KEYWORD
                                     self.advance()
-                    
-                    # exit = RESERVED_WORD
-                    elif self.current_char == 'i':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 't':
-                            lexeme += self.current_char
-                            tokentype = TT_RESERVED_WORD
-                            self.advance()
-                            if (isWhitespace(self.nextState()) or self.nextState() == None) and self.fn != "<stdin>":
-                                return ReferenceError(pos_start, self.pos.copy(), 'Usage of a reserved word.')
-                            elif isWhitespace(self.nextState()) or self.nextState() == None:
-                                exit()
-                
-                    # exp = RESERVED_WORD
-                    elif self.current_char == 'p':
-                        lexeme += self.current_char
-                        tokentype = TT_RESERVED_WORD
-                        self.advance()
+                                
 
-            # false, , float, for                                  
+            # false, float, fn, for                                  
             elif self.current_char == 'f' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
@@ -637,6 +605,12 @@ class Lexer:
                                 lexeme += self.current_char
                                 tokentype = TT_DATA_TYPE
                                 self.advance()
+                
+                # fn = KEYWORD
+                elif self.current_char == 'n':
+                    lexeme += self.current_char
+                    tokentype = TT_KEYWORD
+                    self.advance()
                                 
                 # for = KEYWORD
                 elif self.current_char == 'o':
@@ -646,63 +620,8 @@ class Lexer:
                         lexeme += self.current_char
                         tokentype = TT_KEYWORD
                         self.advance()
-
-            # get, give
-            elif self.current_char == 'g' and len(lexeme) == 0:
-                lexeme += self.current_char
-                self.advance()
-                
-                # get = KEYWORD
-                if self.current_char == 'e':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 't':
-                        lexeme += self.current_char
-                        tokentype = TT_KEYWORD
-                        self.advance()
-                        
-                # give = KEYWORD
-                elif self.current_char == 'i':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'v':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'e':
-                            lexeme += self.current_char
-                            tokentype = TT_KEYWORD
-                            self.advance()
-            
-            # halt, hide
-            elif self.current_char == 'h' and len(lexeme) == 0:
-                lexeme += self.current_char
-                self.advance()
-                
-                # halt = KEYWORD
-                if self.current_char == 'a':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'l':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 't':
-                            lexeme += self.current_char
-                            tokentype = TT_KEYWORD
-                            self.advance()
                             
-                # hide = KEYWORD
-                elif self.current_char == 'i':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'd':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'e':
-                            lexeme += self.current_char
-                            tokentype = TT_KEYWORD
-                            self.advance()
-                            
-            # if, int, imp
+            # if, import, in, input, int
             elif self.current_char == 'i' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
@@ -713,55 +632,75 @@ class Lexer:
                     tokentype = TT_KEYWORD
                     self.advance()
                     
-                # int = DATA_TYPE
-                elif self.current_char == 'n':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 't':
-                        lexeme += self.current_char
-                        tokentype = TT_DATA_TYPE
-                        self.advance()
-                    
-                # imp = RESERVED_WORD
+                # import = RESERVED_WORD
                 elif self.current_char == 'm':
                     lexeme += self.current_char
                     self.advance()
                     if self.current_char == 'p':
                         lexeme += self.current_char
-                        tokentype = TT_RESERVED_WORD
                         self.advance()
+                        if self.current_char == 'o':
+                            lexeme += self.current_char
+                            self.advance()
+                            if self.current_char == 'r':
+                                lexeme += self.current_char
+                                self.advance()
+                                if self.current_char == 't':
+                                    lexeme += self.current_char
+                                    tokentype = TT_RESERVED_WORD
+                                    self.advance()
+                
+                # in = KEYWORD
+                elif self.current_char == 'n':
+                    lexeme += self.current_char
+                    tokentype = TT_KEYWORD
+                    self.advance()
+        
+                    # input = KEYWORD
+                    if self.current_char == 'p':
+                        lexeme += self.current_char
+                        tokentype = TT_IDENTIFIER
+                        self.advance()
+                        if self.current_char == 'u':
+                            lexeme += self.current_char
+                            self.advance()
+                            if self.current_char == 't':
+                                lexeme += self.current_char
+                                tokentype = TT_KEYWORD
+                                self.advance()
+                    
+                    # int = DATA_TYPE
+                    elif self.current_char == 't':
+                        lexeme += self.current_char
+                        tokentype = TT_DATA_TYPE
+                        self.advance()
+                        
                     
 
-            # new, none, not
+            # not, null
             elif self.current_char == 'n' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
-                
-                # new = KEYWORD
-                if self.current_char == 'e':
+            
+                # not = 'NOT'
+                if self.current_char == 'o':
                     lexeme += self.current_char
                     self.advance()
-                    if self.current_char == 'w':
-                        lexeme += self.current_char
-                        tokentype = TT_KEYWORD
-                        self.advance()
-                        
-                # none = RESERVED_WORD
-                elif self.current_char == 'o':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'n':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'e':
-                            lexeme += self.current_char
-                            tokentype = TT_RESERVED_WORD
-                            self.advance()
-                    
-                    # not = 'NOT'
-                    elif self.current_char == 't':
+                    if self.current_char == 't':
                             lexeme += self.current_char
                             tokentype = TT_NOT
+                            self.advance()
+                            
+                # null = 'NULL'
+                elif self.current_char == 'u':
+                    lexeme += self.current_char
+                    self.advance()
+                    if self.current_char == 'l':
+                        lexeme += self.current_char
+                        self.advance()
+                        if self.current_char == 'l':
+                            lexeme += self.current_char
+                            tokentype = TT_RESERVED_WORD
                             self.advance()
   
 
@@ -774,49 +713,52 @@ class Lexer:
                     tokentype = TT_OR
                     self.advance()
                     
-            # package = RESERVED_WORD
+            # print = KEYWORD
             elif self.current_char == 'p' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
-                if self.current_char == 'a':
+                if self.current_char == 'r':
                     lexeme += self.current_char
                     self.advance()
-                    if self.current_char == 'c':
+                    if self.current_char == 'i':
                         lexeme += self.current_char
                         self.advance()
-                        if self.current_char == 'k':
+                        if self.current_char == 'n':
                             lexeme += self.current_char
                             self.advance()
-                            if self.current_char == 'a':
+                            if self.current_char == 't':
+                                lexeme += self.current_char
+                                tokentype = TT_KEYWORD
+                                self.advance()
+            
+            # return = KEYWORD
+            elif self.current_char == 'r' and len(lexeme) == 0:
+                lexeme += self.current_char
+                self.advance()
+                if self.current_char == 'e':
+                    lexeme += self.current_char
+                    self.advance()
+                    if self.current_char == 't':
+                        lexeme += self.current_char
+                        self.advance()
+                        if self.current_char == 'u':
+                            lexeme += self.current_char
+                            self.advance()
+                            if self.current_char == 'r':
                                 lexeme += self.current_char
                                 self.advance()
-                                if self.current_char == 'g':
+                                if self.current_char == 'n':
                                     lexeme += self.current_char
-                                    self.advance()  
-                                    if self.current_char == 'e':
-                                        lexeme += self.current_char
-                                        tokentype = TT_RESERVED_WORD
-                                        self.advance()
+                                    tokentype = TT_KEYWORD
+                                    self.advance()
                                                
-            # show, skip, start, str, sync
+            # skip, start, str
             elif self.current_char == 's' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
-                
-                # show = KEYWORD
-                if self.current_char == 'h':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'o':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'w':
-                            lexeme += self.current_char
-                            tokentype = TT_KEYWORD
-                            self.advance()
-                            
+                                  
                 # skip = KEYWORD
-                elif self.current_char == 'k':
+                if self.current_char == 'k':
                     lexeme += self.current_char
                     self.advance()
                     if self.current_char == 'i':
@@ -847,36 +789,27 @@ class Lexer:
                         lexeme += self.current_char
                         tokentype = TT_DATA_TYPE
                         self.advance()
-                
-                # sync = RESERVED_WORD
-                elif self.current_char == 'y':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'n':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'c':
-                            lexeme += self.current_char
-                            tokentype = TT_RESERVED_WORD
-                            self.advance()
 
 
-            # this, true, try, type
+            # throw, true, try
             elif self.current_char == 't' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
                         
-                # this = KEYWORD
+                # throw = KEYWORD
                 if self.current_char == 'h':
                     lexeme += self.current_char
                     self.advance()
-                    if self.current_char == 'i':
+                    if self.current_char == 'r':
                         lexeme += self.current_char
                         self.advance()
-                        if self.current_char == 's':
+                        if self.current_char == 'o':
                             lexeme += self.current_char
-                            tokentype = TT_KEYWORD
                             self.advance()
+                            if self.current_char == 'w':
+                                lexeme += self.current_char
+                                tokentype = TT_KEYWORD
+                                self.advance()
                             
                 # true = BOOL
                 elif self.current_char == 'r':
@@ -896,17 +829,6 @@ class Lexer:
                         tokentype = TT_KEYWORD
                         self.advance()
                         
-                # type = RESERVED_WORD
-                elif self.current_char == 'y':
-                    lexeme += self.current_char
-                    self.advance()
-                    if self.current_char == 'p':
-                        lexeme += self.current_char
-                        self.advance()
-                        if self.current_char == 'e':
-                            lexeme += self.current_char
-                            tokentype = TT_RESERVED_WORD
-                            self.advance()
 
             # while = KEYWORD
             elif self.current_char == 'w' and len(lexeme) == 0:
