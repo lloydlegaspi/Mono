@@ -5,104 +5,83 @@ from .position import Position
 from .tokens import *
 
 class Lexer:
+    """
+    The Lexer class tokenizes the input text character by character and converts it into tokens.
+    It also reports errors and warnings.
+    """
     def __init__(self, fn, text):
-        self.fn = fn
-        self.text = text
-        self.pos = Position(-1, 0, -1, fn, text)
-        self.current_char = None
+        self.fn = fn # filename
+        self.text = text # input text
+        self.pos = Position(-1, 0, -1, fn, text) # position pointer
+        self.current_char = None # current character
         self.advance()
 
-    # Scan Character Method
+    # Advances the position pointer
     def advance(self):
         self.pos.advance(self.current_char)
         self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
 
-    # Look-Ahead Method
-    def nextState(self):
+    # Returns the next character
+    def next_state(self):
         try:
             char = self.text[self.pos.idx + 1] if self.pos.idx < len(self.text) else None
         except IndexError:
             char = ''
         return char if char is not None else ''
-    
-    # Look-Behind Method
-    def backtrack(self):
-        try:
-            char = self.text[self.pos.idx - 1] if self.pos.idx > 0 else None
-        except IndexError:
-            char = ''     
-        return char if char is not None else ''
 
-    # Tokenization Method
+    # Tokenizes the input text
     def make_tokens(self):
         tokens = []
         errors = []
 
+        # Scans the input text character by character
         while self.current_char != None:
             char = self.current_char
             
-            # Skips through whitespaces
-            if isWhitespace(char):
+            # Skips whitespaces
+            if is_space(char):
                 self.advance()
 
-            # Scans constants, keywords, reserved words, noise words, logical, and identifiers
-            elif isAlphabet(char) or char == '_':
+            # Scans keywords, reserved words, noise words, boolean values, data types, and identifiers
+            elif is_letter(char) or char == '_':
                 result = self.make_identifier()
-                if isinstance(result, Token): 
-                    tokens.append(result)
-                elif isinstance(result, Error):
-                    errors.append(result)
+                (tokens if isinstance(result, Token) else errors).append(result)
 
             # Scans arithmetic operators: +, -, *, /, ~, ^, %, invalid relational symbols such as !, &, |, &&, and ||, and assignment operator and relational lexemes
-            elif isOperator(char):
+            elif is_operator(char):
                 result = self.make_operator()
-                if isinstance(result, Token):
-                    tokens.append(result)
-                elif isinstance(result, Error):
-                    errors.append(result)
+                (tokens if isinstance(result, Token) else errors).append(result)
                 
-            # Handles comments
+            # Scans single-line comments
             elif char == '#':
                 result = self.make_comments()
-                if isinstance(result, Token):
-                    tokens.append(result)
-                elif isinstance(result, Error):
-                    errors.append(result)
+                (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans for number and decimal lexemes
-            elif isDigits(char) or char == '.':
+            elif is_digit(char) or char == '.':
                 result = self.make_number()
-                if isinstance(result, Token):
-                    tokens.append(result)
-                elif isinstance(result, Error):
-                    errors.append(result)
+                (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans for string literals and multi-line docstrings
             elif char == '"':
                 result = self.make_string_or_docstring()
-                if isinstance(result, Token):
-                    tokens.append(result)
-                elif isinstance(result, Error):
-                    errors.append(result)
+                (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans for special symbols such as ., ,, [, ], (, ), and newline character
-            elif isSpecialSymbol(char):
-                tokens.append(self.make_specialSymbol())
+            elif is_special_symbol(char):
+                tokens.append(self.make_special_symbol())
                 self.advance()
 
             # Returns an error when an invalid character is scanned
             else:
                 pos_start = self.pos.copy()
-                char = self.current_char
                 self.advance()
-                errors.append(IllegalCharError(pos_start, self.pos.copy(), f"'{char}'"))
+                errors.append(IllegalCharError(pos_start, self.pos.copy(),
+                                               f"Illegal character '{char}' at line {pos_start.ln + 1}, column {pos_start.col + 1}"))
         
         # End of File
         tokens.append(Token('TT_EOF', TT_EOF, pos_start=self.pos.copy()))
-        if errors:
-            return tokens, errors
-        else:
-            return tokens, None
+        return tokens, errors if errors else None
 
 
     def make_operator(self):
@@ -242,7 +221,7 @@ class Lexer:
                 self.advance()
         elif self.current_char == '|':
             lexeme += self.current_char
-            details = f'"{lexeme}", Consider using "Or" instead.'
+            details = f'"{lexeme}", Consider using "or" instead.'
             isErr = True
             self.advance()
             if self.current_char == '|':
@@ -278,7 +257,7 @@ class Lexer:
         pos_start = self.pos.copy()
 
         # Check if it's the start of a multi-line docstring
-        if quotes == '"' and self.nextState() == '"':  # Detect the start of a multi-line docstring
+        if quotes == '"' and self.next_state() == '"':  # Detect the start of a multi-line docstring
             self.advance()  # Skip the first quote
             self.advance()  # Skip the second quote
             return self.make_multiline_string(pos_start)  # Process the multi-line docstring
@@ -349,18 +328,18 @@ class Lexer:
         isValid = True
         isIdentifier = False
 
-        while self.current_char != None and (isAlphabet(self.current_char) or isDigits(self.current_char) or isWhitespace(self.current_char) or isUntracked(self.current_char) or self.current_char == '_' or self.current_char == '.'):
-            temptchar = self.nextState()
+        while self.current_char != None and (is_letter(self.current_char) or is_digit(self.current_char) or is_space(self.current_char) or is_invalid_symbol(self.current_char) or self.current_char == '_' or self.current_char == '.'):
+            temptchar = self.next_state()
 
-            if isWhitespace(self.current_char):
+            if is_space(self.current_char):
                 break
             elif num_str and self.current_char == '_' and temptchar == '_' or isValid == False:
                 isValid = False
                 num_str += self.current_char
-            elif isAlphabet(self.current_char) or isUntracked(self.current_char):
+            elif is_letter(self.current_char) or is_invalid_symbol(self.current_char):
                 isValid = False
                 num_str += self.current_char
-            elif (not num_str and isDigits(self.current_char)) and isAlphabet(temptchar) and not isWhitespace(temptchar):
+            elif (not num_str and is_digit(self.current_char)) and is_letter(temptchar) and not is_space(temptchar):
                 isIdentifier = True
                 num_str += self.current_char
             elif self.current_char == '.':
@@ -390,8 +369,8 @@ class Lexer:
                 return InvalidDecimalError(pos_start, self.pos.copy(), "Invalid Decimal")
 
 
-    def make_specialSymbol(self):
-        if isSpecialSymbol(self.current_char):
+    def make_special_symbol(self):
+        if is_special_symbol(self.current_char):
             char = self.current_char
             if char == '.':
                 return Token(TT_DOT, char, self.pos.copy())
@@ -425,15 +404,16 @@ class Lexer:
         tokentype = TT_IDENTIFIER
         pos_start = self.pos.copy()
 
-        while self.current_char != None and (isAlphabet(self.current_char) or isDigits(self.current_char) or isWhitespace(self.current_char) or isUntracked(self.current_char) or self.current_char == '_'):
+        while self.current_char != None and (is_letter(self.current_char) or is_digit(self.current_char) or is_space(self.current_char) or is_invalid_symbol(self.current_char) or self.current_char == '_'):
             # Whitespaces
-            if isWhitespace(self.current_char):
+            if is_space(self.current_char):
                 break
 
-            # and = 'AND'
+            # and, as
             elif self.current_char == 'a' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
+                # and = 'AND'
                 if self.current_char == 'n':
                     lexeme += self.current_char
                     self.advance()
@@ -441,6 +421,12 @@ class Lexer:
                         lexeme += self.current_char
                         tokentype = TT_AND
                         self.advance()
+                # as = KEYWORD
+                elif self.current_char == 's':
+                    lexeme += self.current_char
+                    tokentype = TT_KEYWORD
+                    self.advance()
+                        
 
 
             # bool, break
