@@ -1,5 +1,8 @@
 # IDENTIFIER
 TT_IDENTIFIER = 'IDENTIFIER'
+TT_PRIV_IDENTIFIER = 'PRIV_IDENTIFIER'
+TT_CONST_IDENTIFIER = 'CONST_IDENTIFIER'
+TT_PRIV_CONST_IDENTIFIER = 'PRIV_CONST_IDENTIFIER'
 
 # OPERATORS
 TT_ASSIGNMENT = 'ASSIGNMENT'
@@ -87,10 +90,9 @@ class Token:
         if pos_end:
             self.pos_end = pos_end.copy()
 
+    # String representation of the token
     def __str__(self):
         if self.value: return f'{self.type}:{self.value}'
         return f'{self.type}'
     
-    def matches(self, type_, value):
-        return self.type == type_ and self.value == value
 

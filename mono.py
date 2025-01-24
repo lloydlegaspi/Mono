@@ -20,7 +20,7 @@ def format_errors(errors):
 def run_lexer(filename, text):
     """Run the lexer to generate tokens and errors."""
     lexer = Lexer(filename, text)
-    return lexer.make_tokens()
+    return lexer.scan_tokens()
 
 def lexical_analysis(filename, content):
     """Perform lexical analysis and return results."""
@@ -34,7 +34,7 @@ def lexical_analysis(filename, content):
     error_output = format_errors(errors)
     return token_data, error_output
 
-@st.dialog("Open File", width="small")
+@st.dialog("📂 Open File", width="small")
 def open_file_dialog():
     """Modal dialog for Open File functionality."""
     uploaded_file = st.file_uploader("Upload a .mono file", type=["mono"], label_visibility="collapsed")
@@ -47,7 +47,7 @@ def open_file_dialog():
     else:
         st.info("Please upload a file to continue.")
 
-@st.dialog("Save As", width="small")
+@st.dialog("📁 Save As", width="small")
 def save_file_dialog():
     """Modal dialog for Save As functionality."""
     filename_input = st.text_input("Enter Filename (without extension)", "unnamed", key="filename_input")
@@ -73,6 +73,10 @@ def save_file_dialog():
         st.success(f"File saved as {st.session_state['file_saved']}")
         del st.session_state["file_saved"] 
 
+@st.dialog("⚠️ Error Details", width="small")
+def error_details_dialog():
+    """Modal dialog for displaying error details."""
+    st.write(st.session_state["errors"])
     
 col1, col2= st.columns([6, 2])
 with col1:
@@ -106,10 +110,15 @@ with col2:
             content = st.session_state["file_content"].strip()
             if content:
                 token_data, error_output = lexical_analysis("unnamed", content)
-                st.session_state["errors"] = error_output
-
-                st.write("Errors:")
-                st.text(error_output)
+                
+                # if no errors, dont show dialog
+                if error_output != "No errors found.": 
+                    st.session_state["errors"] = error_output
+                    error_details_dialog()
+                    
+                    with st.container(border=True):
+                        st.write("⚠️ Error Details:")
+                        st.write(st.session_state["errors"])
 
                 if token_data:
                     st.write("Lexical Analysis Output:")

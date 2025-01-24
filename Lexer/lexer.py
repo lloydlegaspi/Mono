@@ -1,4 +1,4 @@
-from .check import *
+from .char_validators import *
 from errors.base_error import *
 from errors.lexer_errors import *
 from .position import Position
@@ -16,21 +16,33 @@ class Lexer:
         self.current_char = None # current character
         self.advance()
 
-    # Advances the position pointer
     def advance(self):
+        """
+        Advances the position pointer to the next character in the input text.
+        """
         self.pos.advance(self.current_char)
         self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
 
-    # Returns the next character
-    def next_state(self):
+    def peek_next_char(self):
+        """
+        Peeks at the next character in the input text without advancing the position pointer.
+        """
         try:
             char = self.text[self.pos.idx + 1] if self.pos.idx < len(self.text) else None
         except IndexError:
             char = ''
         return char if char is not None else ''
 
-    # Tokenizes the input text
-    def make_tokens(self):
+# ---- FIRST SCANNING METHOD ----
+
+    def scan_tokens(self):
+        """
+        Scans the input text character by character and converts it into tokens.
+
+        Returns:
+            list: A list of tokens.
+            list: A list of errors.
+        """
         tokens = []
         errors = []
 
@@ -44,32 +56,32 @@ class Lexer:
 
             # Scans keywords, reserved words, noise words, boolean values, data types, and identifiers
             elif is_letter(char) or char == '_':
-                result = self.make_identifier()
+                result = self.generate_identifier_token()
                 (tokens if isinstance(result, Token) else errors).append(result)
 
             # Scans arithmetic operators: +, -, *, /, ~, ^, %, invalid relational symbols such as !, &, |, &&, and ||, and assignment operator and relational lexemes
             elif is_operator(char):
-                result = self.make_operator()
+                result = self.generate_operator_token()
                 (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans single-line comments
             elif char == '#':
-                result = self.make_comments()
+                result = self.generate_comment_token()
                 (tokens if isinstance(result, Token) else errors).append(result)
-                
-            # Scans for number and decimal lexemes
-            elif is_digit(char) or char == '.':
-                result = self.make_number()
+           
+            # Scan for numbers only if the dot is followed by a digit
+            elif is_digit(char) or (char == '.' and is_digit(self.peek_next_char())):
+                result = self.generate_number_token()
                 (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans for string literals and multi-line docstrings
             elif char == '"':
-                result = self.make_string_or_docstring()
+                result = self.generate_string_or_docstring_token()
                 (tokens if isinstance(result, Token) else errors).append(result)
                 
             # Scans for special symbols such as ., ,, [, ], (, ), and newline character
             elif is_special_symbol(char):
-                tokens.append(self.make_special_symbol())
+                tokens.append(self.generate_special_symbol_token())
                 self.advance()
 
             # Returns an error when an invalid character is scanned
@@ -83,8 +95,14 @@ class Lexer:
         tokens.append(Token('TT_EOF', TT_EOF, pos_start=self.pos.copy()))
         return tokens, errors if errors else None
 
-
-    def make_operator(self):
+# ---- SECOND SCANNING METHOD ----
+    def generate_operator_token(self):
+        """
+        Handles arithmetic operators, invalid relational symbols, and assignment operators.
+        
+        Returns: 
+            Token: The token containing the operator value.
+        """
         tokentype = ''
         lexeme = ''
         details = ''
@@ -148,6 +166,12 @@ class Lexer:
                     lexeme += self.current_char
                     isTok = True
                     self.advance()
+            elif self.current_char == '=':
+                tokentype = TT_DIVIDE_ASSIGN
+                lexeme += self.current_char
+                isTok = True
+                self.advance()
+                    
         elif self.current_char == '^':
             tokentype = TT_EXPONENT
             lexeme += self.current_char
@@ -235,8 +259,13 @@ class Lexer:
         elif isErr:
             return InvalidRelationalSymbol(pos_start, self.pos.copy(), details)
         
-    # Create Token for Single-Line Comments
-    def make_comments(self):
+    def generate_comment_token(self):
+        """
+        Handles single-line comments, extracting the value and returning a token.
+
+        Returns:
+            Token: The token containing the comment value.
+        """
         pos_start = self.pos.copy()
         comment_str = '#'
         self.advance()
@@ -247,44 +276,45 @@ class Lexer:
 
         return Token(TT_COMMENT, comment_str, pos_start, self.pos.copy())
    
-    def make_string_or_docstring(self):
+    def generate_string_or_docstring_token(self):
         """
-        Handles string literals and multi-line docstrings, extracting the value
-        and determining whether it's a single-line or multi-line string.
+        Handles string literals and multi-line docstrings, extracting the value and returning a token.
+        
+        Returns:
+            Token: The token containing the string value.
         """
         string_value = ''
         quotes = self.current_char
         pos_start = self.pos.copy()
 
         # Check if it's the start of a multi-line docstring
-        if quotes == '"' and self.next_state() == '"':  # Detect the start of a multi-line docstring
-            self.advance()  # Skip the first quote
-            self.advance()  # Skip the second quote
-            return self.make_multiline_string(pos_start)  # Process the multi-line docstring
+        if quotes == '"' and self.peek_next_char() == '"':
+            self.advance()  
+            self.advance()  
+            return self.make_multiline_string(pos_start)  
 
-        if quotes == '"':  # Single-line string
-            self.advance()  # Skip the initial quote
+        if quotes == '"':  
+            self.advance() 
 
-            # Check for an empty string ""
-            if self.current_char == '"':  # If the next character is another quote, it's an empty string ""
-                self.advance()  # Skip the closing quote
-                return Token('TT_STRING', string_value, pos_start=pos_start, pos_end=self.pos.copy())  # Return empty string
+            if self.current_char == '"': 
+                self.advance()  
+                return Token(TT_STRING, string_value, pos_start=pos_start, pos_end=self.pos.copy()) 
 
             # Handle string content and escape sequences
             while self.current_char != '"' and self.current_char is not None:
-                if self.current_char == '\\':  # Handle escape sequences
-                    self.advance()  # Skip the backslash
-                    if self.current_char in ['"', '\\']:  # Handle escape characters
+                if self.current_char == '\\':  
+                    self.advance()  
+                    if self.current_char in ['"', '\\']:  
                         string_value += self.current_char
                     else:
-                        string_value += '\\'  # Just add the backslash if not a recognized escape sequence
+                        string_value += '\\'  
                 else:
                     string_value += self.current_char
                 self.advance()
 
-            if self.current_char == '"':  # End of string
-                self.advance()  # Skip the closing quote
-                return Token('TT_STRING', string_value, pos_start=pos_start, pos_end=self.pos.copy())
+            if self.current_char == '"':  
+                self.advance()  
+                return Token(TT_STRING, string_value, pos_start=pos_start, pos_end=self.pos.copy())
 
             return Error(pos_start, self.pos.copy(), 'Unterminated string literal', 'String is not properly closed')
 
@@ -294,26 +324,28 @@ class Lexer:
 
     def make_multiline_string(self, pos_start):
         """
-        Scans for a multi-line string (triple quotes) and handles escape sequences.
+        Handles multi-line docstrings, extracting the value and returning a token.
+        
+        Returns:
+            Token: The token containing the multi-line string value.
         """
-        string_value = '"""'  # Include the starting triple quotes in the lexeme
-        # Skip the first part of the triple quotes (""" at the start)
-        self.advance()  # Skip the first quote
+        string_value = '"""'  
+        self.advance()  
 
         # Capture the content between the triple quotes
         while self.current_char != None:
-            if self.current_char == '"':  # Found one part of the closing quote
+            if self.current_char == '"':  
                 self.advance()
-                if self.current_char == '"':  # Check for closing triplets (""" or """)
+                if self.current_char == '"':  
                     self.advance()
-                    if self.current_char == '"':  # Found the closing triplet
+                    if self.current_char == '"':  
                         self.advance()
-                        string_value += '"""'  # Add the closing triple quotes to the lexeme
-                        return Token('TT_DOCSTRING', string_value, pos_start=pos_start, pos_end=self.pos.copy())  # Return the docstring
+                        string_value += '"""' 
+                        return Token(TT_DOCSTRING, string_value, pos_start=pos_start, pos_end=self.pos.copy()) 
                     else:
-                        string_value += '"'  # Add one quote and continue
+                        string_value += '"'  
                 else:
-                    string_value += '"'  # Add one quote and continue
+                    string_value += '"'  
             else:
                 string_value += self.current_char
                 self.advance()
@@ -321,27 +353,39 @@ class Lexer:
         return Error(pos_start, self.pos.copy(), 'Unterminated multi-line string literal', 'Multi-line string is not properly closed')
 
 
-    def make_number(self):
+    def generate_number_token(self):
+        """
+        Handles integer and float numbers, extracting the value and returning a token.
+        
+        Returns:
+            Token: The token containing the number value.
+        """
         pos_start = self.pos.copy()
         num_str = ''
         dot_count = 0
-        isValid = True
-        isIdentifier = False
-
+        is_valid = True
+        id_identifier = False
+            
         while self.current_char != None and (is_letter(self.current_char) or is_digit(self.current_char) or is_space(self.current_char) or is_invalid_symbol(self.current_char) or self.current_char == '_' or self.current_char == '.'):
-            temptchar = self.next_state()
+            temptchar = self.peek_next_char()
 
             if is_space(self.current_char):
                 break
-            elif num_str and self.current_char == '_' and temptchar == '_' or isValid == False:
-                isValid = False
+            
+            # Handle cases where the number starts with an underscore
+            elif num_str and self.current_char == '_' and temptchar == '_' or   is_valid == False: 
+                is_valid = False
                 num_str += self.current_char
+                
             elif is_letter(self.current_char) or is_invalid_symbol(self.current_char):
-                isValid = False
+                is_valid = False
                 num_str += self.current_char
+            
             elif (not num_str and is_digit(self.current_char)) and is_letter(temptchar) and not is_space(temptchar):
-                isIdentifier = True
+                id_identifier = True
                 num_str += self.current_char
+            
+            # Handle the dot in the number
             elif self.current_char == '.':
                 if dot_count == 1:
                     dot_count += 1
@@ -352,13 +396,14 @@ class Lexer:
                     num_str += self.current_char
             self.advance()
 
-        if dot_count == 0 and isValid == True and isIdentifier == False:
+        # Error handling for invalid numbers
+        if dot_count == 0 and   is_valid == True and id_identifier == False:
             return Token(TT_INTEGER, int(num_str), pos_start, self.pos.copy())
-        elif dot_count == 2 and isValid == True:
+        elif dot_count == 2 and is_valid == True:
             return LexicalError(pos_start, self.pos.copy(), f'{num_str}')
-        elif isIdentifier:
+        elif id_identifier:
             return IllegalIdentifierError(pos_start, self.pos.copy(), f'{num_str}')
-        elif isValid == False:
+        elif    is_valid == False:
             return IllegalNumberError(pos_start, self.pos.copy(), f'{num_str}')
         elif num_str == '.':
             return Token(TT_DOT, num_str, pos_start, self.pos.copy())
@@ -369,7 +414,13 @@ class Lexer:
                 return InvalidDecimalError(pos_start, self.pos.copy(), "Invalid Decimal")
 
 
-    def make_special_symbol(self):
+    def generate_special_symbol_token(self):
+        """
+        Handles special symbols such as ., ,, [, ], (, ), and newline character.
+        
+        Returns:
+            Token: The token containing the special symbol value.
+        """
         if is_special_symbol(self.current_char):
             char = self.current_char
             if char == '.':
@@ -395,11 +446,16 @@ class Lexer:
             elif char == '}':
                 return Token(TT_RCURLY, char, self.pos.copy())
             elif char == '\n':
-                return Token(TT_NEWLINE, char, self.pos.copy())
+                return Token(TT_NEWLINE, '\\n', self.pos.copy())
     
     
-    # SCANNING METHODS
-    def make_identifier(self):
+    def generate_identifier_token(self):
+        """
+        Handles keywords, reserved words, noise words, boolean values, data types, and identifiers.
+        
+        Returns:
+            Token: The token containing the identifier value.
+        """
         lexeme = ''
         tokentype = TT_IDENTIFIER
         pos_start = self.pos.copy()
@@ -426,8 +482,7 @@ class Lexer:
                     lexeme += self.current_char
                     tokentype = TT_KEYWORD
                     self.advance()
-                        
-
+                    
 
             # bool, break
             elif self.current_char == 'b' and len(lexeme) == 0:
@@ -839,6 +894,14 @@ class Lexer:
                 lexeme += self.current_char
                 tokentype = TT_IDENTIFIER
                 self.advance()
+        
+        # Determine the type of identifier after building the lexeme
+        if lexeme.isupper() and lexeme.startswith('_'):
+            tokentype = TT_PRIV_CONST_IDENTIFIER
+        elif lexeme.isupper():
+            tokentype = TT_CONST_IDENTIFIER
+        elif lexeme.startswith('_'):
+            tokentype = TT_PRIV_IDENTIFIER
 
         return Token(tokentype, lexeme, pos_start, self.pos.copy())
 
