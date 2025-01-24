@@ -12,10 +12,6 @@ class IllegalNumberError(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start, pos_end, 'Illegal Number', details)
 
-class LexicalError(Error):
-    def __init__(self, pos_start, pos_end, details):
-        super().__init__(pos_start, pos_end, 'Lexical Error', details)
-
 class InvalidDecimalError(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start, pos_end, 'Invalid Decimal', details)
@@ -23,9 +19,10 @@ class InvalidDecimalError(Error):
 class InvalidRelationalSymbol(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start, pos_end, 'Invalid Symbol', details)
-
-class ReferenceError(Error):
+        
+class LexicalError(Error):
     def __init__(self, pos_start, pos_end, details):
-        super().__init__(pos_start, pos_end, 'Reference Error', details)
+        super().__init__(pos_start, pos_end, 'Lexical Error', details)
+
         
         
