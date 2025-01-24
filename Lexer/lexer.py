@@ -5,6 +5,8 @@ from .position import Position
 from .tokens import *
 import re
 
+SNAKE_CASE = re.compile(r'^[a-z_][a-z0-9_]*$')
+
 class Lexer:
     """
     The Lexer class tokenizes the input text character by character and converts it into tokens.
@@ -925,7 +927,6 @@ class Lexer:
         elif lexeme.startswith('_'):
             tokentype = TT_PRIV_IDENTIFIER
             
-        SNAKE_CASE = re.compile(r'^[a-z_][a-z0-9_]*$')
         
         # Validate snake_case convention
         if tokentype == TT_IDENTIFIER and not SNAKE_CASE.fullmatch(lexeme):
