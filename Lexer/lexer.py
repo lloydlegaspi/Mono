@@ -3,9 +3,7 @@ from errors.base_error import *
 from errors.lexer_errors import *
 from .position import Position
 from .tokens import *
-import re
-
-SNAKE_CASE = re.compile(r'^[a-z_][a-z0-9_]*$')
+from Utils.snake_case import SNAKE_CASE
 
 class Lexer:
     """
