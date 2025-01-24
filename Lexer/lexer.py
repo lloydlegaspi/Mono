@@ -465,7 +465,7 @@ class Lexer:
             if is_space(self.current_char):
                 break
 
-            # and, as
+            # and, any, as
             elif self.current_char == 'a' and len(lexeme) == 0:
                 lexeme += self.current_char
                 self.advance()
@@ -477,6 +477,12 @@ class Lexer:
                         lexeme += self.current_char
                         tokentype = TT_AND
                         self.advance()
+                    # any = 'ANY'
+                    elif self.current_char == 'y':
+                        lexeme += self.current_char
+                        tokentype = TT_KEYWORD
+                        self.advance()
+                        
                 # as = KEYWORD
                 elif self.current_char == 's':
                     lexeme += self.current_char
