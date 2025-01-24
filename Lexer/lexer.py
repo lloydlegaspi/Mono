@@ -3,6 +3,7 @@ from errors.base_error import *
 from errors.lexer_errors import *
 from .position import Position
 from .tokens import *
+import re
 
 class Lexer:
     """
@@ -923,6 +924,16 @@ class Lexer:
             tokentype = TT_CONST_IDENTIFIER
         elif lexeme.startswith('_'):
             tokentype = TT_PRIV_IDENTIFIER
+            
+        SNAKE_CASE = re.compile(r'^[a-z_][a-z0-9_]*$')
+        
+        # Validate snake_case convention
+        if tokentype == TT_IDENTIFIER and not SNAKE_CASE.fullmatch(lexeme):
+            return IllegalIdentifierError(
+                pos_start,
+                self.pos.copy(),
+                f"Invalid identifier '{lexeme}' does not follow snake_case naming convention."
+            )
 
         return Token(tokentype, lexeme, pos_start, self.pos.copy())
 
