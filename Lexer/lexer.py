@@ -715,6 +715,21 @@ class Lexer:
                                 lexeme += self.current_char
                                 tokentype = TT_KEYWORD
                                 self.advance()
+                                
+                                # input_int = KEYWORD
+                                if self.current_char == '_':
+                                    lexeme += self.current_char
+                                    self.advance()
+                                    if self.current_char == 'i':
+                                        lexeme += self.current_char
+                                        self.advance()
+                                        if self.current_char == 'n':
+                                            lexeme += self.current_char
+                                            self.advance()
+                                            if self.current_char == 't':
+                                                lexeme += self.current_char
+                                                tokentype = TT_KEYWORD
+                                                self.advance()
                     
                     # int = DATA_TYPE
                     elif self.current_char == 't':
